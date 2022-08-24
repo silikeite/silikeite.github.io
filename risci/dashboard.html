@@ -77,11 +77,38 @@
                     }
                 }
             })
+            var ctx = document.getElementById("myChart2").getContext("2d")
+            var myChart2 = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: ["6","5","4","3","2d","Yesterday", "Today"],
+                    datasets: [{
+                        label:"Allowed",
+                        data: [0,0,0,0,0,0,0],
+                        backgroundColor: "#00FF00"
+                    },{
+                        label:"Denied",
+                        data: [0,0,0,0,0,0,0],
+                        backgroundColor: "#FF0000"
+                    },],
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Next 7 Days'
+                            }
+                        }
+                    }
+                }
+            })
 
             const interval = setInterval(async function() {
                 const d = new Date();
                 const response = await fetch("https://riscitracker11-default-rtdb.asia-southeast1.firebasedatabase.app/entries.json")
                 const myJson = await response.json()
+
+                // Today
                 today = d.toISOString().split('T')[0].replace(/-/g, "")
                 if(today in myJson) {
                     var allowed = 0
@@ -96,12 +123,35 @@
                     myChart1.update()
                     document.getElementById("Today").innerHTML=allowed+" allowed, "+denied+" denied today."
                 }
+
+                // Table
                 newtable = ""
                 Object.keys(myJson).sort().reverse().forEach((key,index)=>{
                     newtable += "<tr><td>" + key + "</td><td>" + myJson[key].allowed + "</td><td>" +  myJson[key].denied + "</td></tr>"
                 })
                 document.getElementById("table").innerHTML = newtable
 
+
+                // Last 7 Days
+                allowed = [0,0,0,0,0,0,0]
+                denied =  [0,0,0,0,0,0,0]
+
+                for(i=0; i<7; i++){
+                    datecheck = new Date(Date.now() - (6-i)*86400000);
+                    datestr = datecheck.toISOString().split('T')[0].replace(/-/g, "")
+                    if(datestr in myJson) {
+                        if("allowed" in myJson[datestr]) {
+                            allowed[i] = myJson[datestr].allowed
+                        }
+                        if("denied" in myJson[datestr]) {
+                            denied[i] = myJson[datestr].denied
+                        }
+                    }
+                }
+
+                myChart2.data.datasets[0].data = allowed
+                myChart2.data.datasets[1].data = denied
+                myChart2.update()
             },5000)
         </script>
     </body>
